@@ -137,6 +137,21 @@
     .sp-brand{ opacity:1; animation:none; }
   }
 
+
+  /* ── 오늘의 운세 지수 ── */
+  .score-block{ margin-top:26px; }
+  .score-label{ font-size:12px; font-weight:600; color:var(--cap); }
+  .score-num{ margin-top:2px; font-size:46px; font-weight:800; color:#6C59B8; line-height:1.1; letter-spacing:-.02em; }
+  .score-num small{ font-size:20px; font-weight:700; }
+  .score-grade{ display:inline-block; margin-top:6px; font-size:12.5px; font-weight:700; color:#6C59B8; background:rgba(140,121,196,.13); padding:4px 12px; border-radius:999px; }
+  /* ── 사주 총평 ── */
+  .reading{ margin-top:26px; font-size:14.5px; line-height:1.9; color:var(--sub); word-break:keep-all; max-width:34ch; margin-left:auto; margin-right:auto; text-align:center; }
+  /* ── 영역별 운세 4칸 ── */
+  .area-grid{ margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .area-card{ background:#FCF9F2; border-radius:20px; padding:16px 14px; text-align:center; }
+  .area-name{ font-size:12.5px; font-weight:700; color:var(--sub); }
+  .area-score{ margin-top:2px; font-size:22px; font-weight:800; color:#6C59B8; }
+  .area-line{ margin-top:6px; font-size:12px; line-height:1.65; color:var(--cap); word-break:keep-all; }
   /* ── 레이더(총운) 카드 ── */
   .radar-card{ margin-top:20px; background:#FCF9F2; border:none; border-radius:28px; padding:28px 22px 16px; text-align:center; }
   .radar-label{ font-size:12.5px; font-weight:700; color:#8C79C4; }
@@ -222,12 +237,22 @@
 
       <div class="gyeol-name" id="gyeolName"></div>
       <div class="gyeol-tag" id="gyeolTag"></div>
+
+      <div class="score-block">
+        <div class="score-label">오늘의 운세 지수</div>
+        <div class="score-num" id="scoreNum"></div>
+        <div class="score-grade" id="scoreGrade"></div>
+      </div>
+
       <div class="divider"></div>
       <p class="oneline" id="oneline"></p>
+      <div class="reading" id="reading"></div>
       <div class="lucky" id="lucky"></div>
     </div>
 
     <div class="tomorrow" id="tomorrow"></div>
+
+    <div class="area-grid" id="areaGrid"></div>
 
     <div class="radar-card">
       <div class="radar-title">오늘의 운세 흐름 읽기</div>
@@ -409,6 +434,72 @@ const LINES={
   ],
 };
 const BRANCH_EL={자:"수",축:"토",인:"목",묘:"목",진:"토",사:"화",오:"화",미:"토",신:"금",유:"금",술:"토",해:"수"};
+/* ── 십신 10종 (음양 구분) ── */
+function sibsin10(myIdx, tIdx){
+  const me=CG[myIdx], t=CG[tIdx];
+  const mEl=STEM_EL[me], tEl=STEM_EL[t];
+  const same=(myIdx%2)===(tIdx%2);
+  if(tEl===mEl)            return same?"비견":"겁재";
+  if(GEN[mEl]===tEl)       return same?"식신":"상관";
+  if(CON[mEl]===tEl)       return same?"편재":"정재";
+  if(CON[tEl]===mEl)       return same?"편관":"정관";
+  if(GEN[tEl]===mEl)       return same?"편인":"정인";
+}
+/* ── 지지 합·충 (내 일지 × 오늘 일지) ── */
+const YUKHAP={자:"축",축:"자",인:"해",해:"인",묘:"술",술:"묘",진:"유",유:"진",사:"신",신:"사",오:"미",미:"오"};
+const CHUNG={자:"오",오:"자",축:"미",미:"축",인:"신",신:"인",묘:"유",유:"묘",진:"술",술:"진",사:"해",해:"사"};
+function branchRel(mine, today){
+  if(YUKHAP[mine]===today) return "합";
+  if(CHUNG[mine]===today) return "충";
+  return "";
+}
+/* ── 일간 성향 리딩 (나를 읽어주는 문장) ── */
+const ILGAN_READ={
+  갑:"겉은 담담해도 속엔 '내 방식'이 뚜렷한 편이죠. 한번 정하면 곧게 밀고 가는 힘이 있어요.",
+  을:"부드러워 보여도 쉽게 꺾이지 않는 사람이에요. 돌아가더라도 결국 원하는 자리에 닿는 타입이죠.",
+  병:"숨기려 해도 존재감이 드러나는 편이에요. 마음이 동하면 속도가 확 붙는 타입이죠.",
+  정:"겉은 차분한데 속엔 꺼지지 않는 불씨가 있어요. 아끼는 것엔 끝까지 정성을 쏟는 타입이죠.",
+  무:"쉽게 흔들리지 않는 뚝심이 있어요. 주변에서 은근히 기대고 싶어 하는 사람이죠.",
+  기:"티 내지 않고 챙기는 세심함이 있어요. 그만큼 속으로 삭이는 것도 많은 타입이죠.",
+  경:"맺고 끊음이 분명한 편이죠. 아닌 건 아니라고 해야 속이 편한 타입이에요.",
+  신:"예민하게 벼려진 감각이 있어요. 디테일이 어긋나면 바로 알아채는 타입이죠.",
+  임:"겉은 유연한데 속은 깊고 넓어요. 생각이 많아 잠 못 드는 날도 있는 타입이죠.",
+  계:"조용히 스며들어 사람 마음을 읽는 편이에요. 눈치가 빨라 먼저 지치기도 하죠.",
+};
+/* ── 오늘 기운 리딩 (십신 10종) ── */
+const SIBSIN_READ={
+  비견:"오늘은 내 힘이 또렷해지는 비견의 날이에요. 주도권을 잡고 밀어붙이기 좋아요.",
+  겁재:"오늘은 경쟁 기운이 도는 겁재의 날이에요. 돈 거래나 내기는 미루는 게 상책이에요.",
+  식신:"오늘은 재주가 살아나는 식신의 날이에요. 만들고, 말하고, 나누는 일마다 복이 붙어요.",
+  상관:"오늘은 말이 날카로워지는 상관의 날이에요. 아이디어는 빛나지만 윗사람 앞에선 한 번 삼키세요.",
+  편재:"오늘은 돈이 크게 움직이는 편재의 날이에요. 기회는 있지만 큰 지출은 한 번 더 재보세요.",
+  정재:"오늘은 차곡차곡 쌓이는 정재의 날이에요. 성실하게 챙긴 만큼 정확히 돌아와요.",
+  편관:"오늘은 압박이 들어오는 편관의 날이에요. 급한 요구가 와도 무리한 약속은 받지 마세요.",
+  정관:"오늘은 인정받기 좋은 정관의 날이에요. 원칙대로 하면 공적인 일에서 점수를 얻어요.",
+  편인:"오늘은 생각이 깊어지는 편인의 날이에요. 공부와 기획엔 좋지만 큰 결정은 미루세요.",
+  정인:"오늘은 귀인이 받쳐주는 정인의 날이에요. 도움을 청하면 생각보다 쉽게 풀려요.",
+};
+const HAP_READ={
+  합:"게다가 오늘 일진과 합(合)이 들어, 사람과 손잡는 일마다 잘 붙어요.",
+  충:"다만 오늘 일진과 충(沖)이 있어 일정이 흔들릴 수 있어요. 변동이 와도 유연하게 받아넘기세요.",
+};
+/* ── 영역별 리딩 (점수 레벨별) ── */
+const AREA_READ={
+  재물운:{H:"돈길이 열려 있어요. 미뤄둔 정산·협상은 오늘.",M:"큰 흐름은 무난해요. 계획한 지출만 하면 탈 없어요.",L:"오늘은 지키는 게 버는 거예요. 충동구매는 내일로."},
+  연애운:{H:"마음이 잘 통하는 날. 먼저 표현하면 배로 돌아와요.",M:"잔잔하게 좋은 날. 가벼운 안부가 관계를 데워요.",L:"오해가 생기기 쉬운 날. 중요한 말은 얼굴 보고."},
+  사업운:{H:"추진력이 붙는 날. 미뤄둔 제안, 오늘 밀어보세요.",M:"하던 일을 착실히. 새 판은 내일 벌여도 늦지 않아요.",L:"서두르면 두 번 일해요. 오늘은 점검과 마무리."},
+  건강운:{H:"컨디션이 받쳐주는 날. 미뤄둔 운동 시작하기 좋아요.",M:"무난하지만 과로는 금물. 중간중간 몸을 풀어주세요.",L:"기운이 새기 쉬운 날. 오늘은 일찍 쉬어주세요."},
+};
+/* ── 총운 점수 ── */
+const SIBSIN_W={정인:16,정재:15,식신:15,정관:14,비견:11,편재:11,편인:7,상관:5,겁재:3,편관:3};
+function todayScore(ss, rel, seed){
+  let s=58+(SIBSIN_W[ss]||8);
+  if(rel==="합") s+=8; if(rel==="충") s-=9;
+  let r=seed>>>0; r=(r*9301+49297)%233280;
+  s+=Math.floor(r/233280*12)-5;
+  return Math.max(46,Math.min(97,s));
+}
+const gradeOf=s=> s>=90?"아주 좋음": s>=78?"좋음": s>=62?"무난한 흐름":"조심조심";
 const EL_COLOR={목:"초록",화:"붉은색",토:"노란색",금:"흰색",수:"남색"};
 const EL_DIR={목:"동쪽",화:"남쪽",토:"남서쪽",금:"서쪽",수:"북쪽"};
 const genOf=el=>({화:"목",토:"화",금:"토",수:"금",목:"수"})[el]; /* 나를 生하는 오행 */
@@ -438,7 +529,7 @@ function renderRadar(sc){
   svg+=`<polygon points="${dp}" fill="#9C8CCB" fill-opacity=".22" stroke="#8C79C4" stroke-width="2" stroke-linejoin="round"/>`;
   F.forEach((k,i)=>{ const [x,y]=pt(i,R*(sc[k]/100)); svg+=`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="#8C79C4"/>`; });
   const LBL=[[cx,cy-R-16,"middle"],[cx+R+12,cy-R*0.28,"start"],[cx+R*0.68,cy+R+22,"middle"],[cx-R*0.68,cy+R+22,"middle"],[cx-R-12,cy-R*0.28,"end"]];
-  F.forEach((k,i)=>{ const [x,y,an]=LBL[i]; svg+=`<text x="${x}" y="${y}" text-anchor="${an}" font-size="13" font-weight="600" fill="#A69C8A" font-family="Pretendard,sans-serif">${k}</text>`; });
+  F.forEach((k,i)=>{ const [x,y,an]=LBL[i]; svg+=`<text x="${x}" y="${y}" text-anchor="${an}" font-size="13" font-weight="600" fill="#A69C8A" font-family="Pretendard,sans-serif">${k} <tspan fill="#8C79C4" font-weight="800">${sc[k]}</tspan></text>`; });
   svg+=`</svg>`;
   $("radarWrap").innerHTML=svg;
 }
@@ -571,6 +662,25 @@ function enterToday(){
     `<div><span>오늘의 색</span><b>${EL_COLOR[cEl]}</b></div>`+
     `<div><span>오늘의 숫자</span><b>${num}</b></div>`+
     `<div><span>좋은 방향</span><b>${EL_DIR[dEl]}</b></div>`;
+
+  /* 오늘의 운세 지수 + 사주 총평 (십신10·합충 기반) */
+  const myStemIdx=CG.indexOf(me.dayStem);
+  const ss10=sibsin10(myStemIdx, todayIdx%10);
+  const myBranch=me.dayPillar[1], todayBranch=JJ[todayIdx%12];
+  const bRel=branchRel(myBranch, todayBranch);
+  const score=todayScore(ss10, bRel, tj*53+hash);
+  $("scoreNum").innerHTML=score+'<small>점</small>';
+  $("scoreGrade").textContent=gradeOf(score);
+  let reading=ILGAN_READ[me.dayStem]+" "+SIBSIN_READ[ss10];
+  if(bRel) reading+=" "+HAP_READ[bRel];
+  $("reading").textContent=reading;
+
+  /* 영역별 운세 4칸 (레이더 점수 재사용) */
+  const areaSc=radarScores(me.dayEl, todayIdx, tj*31+hash);
+  const lv=v=> v>=75?"H": v>=60?"M":"L";
+  $("areaGrid").innerHTML=["재물운","연애운","사업운","건강운"].map(k=>
+    `<div class="area-card"><div class="area-name">${k}</div><div class="area-score">${areaSc[k]}</div><div class="area-line">${AREA_READ[k][lv(areaSc[k])]}</div></div>`
+  ).join("");
 
   /* 내일 결 예고 */
   const tIdx=pilIdx(tj+1), tEl=STEM_EL[CG[tIdx%10]];
